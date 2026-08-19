@@ -6,13 +6,26 @@ import type { Credential } from "./yuketang";
 export function getCredential(): (Credential & { loginAt: number }) | null {
   const row = db.select().from(yktCredentials).limit(1).get();
   if (!row) return null;
-  return { user_id: row.user_id, auth: row.auth, loginAt: row.login_at.getTime() };
+  return {
+    user_id: row.user_id,
+    auth: row.auth,
+    session_id: row.session_id,
+    expires_at: row.expires_at.getTime(),
+    loginAt: row.login_at.getTime(),
+  };
 }
 
 /** 保存凭证(覆盖旧凭证,单行) */
 export function saveCredential(cred: Credential) {
   db.delete(yktCredentials).run();
-  db.insert(yktCredentials).values(cred).run();
+  db.insert(yktCredentials)
+    .values({
+      user_id: cred.user_id,
+      auth: cred.auth,
+      session_id: cred.session_id,
+      expires_at: new Date(cred.expires_at),
+    })
+    .run();
 }
 
 /** 清除凭证(退出登录) */
