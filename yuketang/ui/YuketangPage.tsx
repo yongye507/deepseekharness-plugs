@@ -1,11 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import QRCode from "qrcode";
 
 const API = "/api/features/yuketang";
 
-type Classroom = { name: string; students_count?: number; course_id?: number };
+type Classroom = { id: number; name: string; students_count?: number; course_id?: number };
 type Course = { name: string; classrooms: Classroom[]; manage_permission?: boolean; update_time?: string };
 type Profile = { name?: string; nickname?: string; school?: string };
 
@@ -151,12 +152,19 @@ export function YuketangPage() {
                   <div className="text-sm text-neutral-500">(无班级)</div>
                 )}
                 {c.classrooms.map((cl, j) => (
-                  <div key={j} className="flex items-center justify-between text-sm">
+                  <Link
+                    key={j}
+                    href={`/features/yuketang/classroom/${cl.id}`}
+                    className="flex items-center justify-between rounded-lg px-2 py-1.5 text-sm transition-colors hover:bg-neutral-800"
+                  >
                     <span className="text-neutral-300">{cl.name}</span>
-                    {cl.students_count != null && (
-                      <span className="text-xs text-neutral-500">{cl.students_count} 人</span>
-                    )}
-                  </div>
+                    <span className="flex items-center gap-2">
+                      {cl.students_count != null && (
+                        <span className="text-xs text-neutral-500">{cl.students_count} 人</span>
+                      )}
+                      <span className="text-xs text-indigo-400">查看进度 →</span>
+                    </span>
+                  </Link>
                 ))}
               </div>
               {c.manage_permission && (

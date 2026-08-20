@@ -1,5 +1,12 @@
 import type { ApiHandler } from "../../../src/platform/feature";
-import { fetchQrCode, getCourses, getUserInfo, pollScan } from "./yuketang";
+import {
+  fetchQrCode,
+  findNextToLearn,
+  getCourseProgress,
+  getCourses,
+  getUserInfo,
+  pollScan,
+} from "./yuketang";
 import { clearCredential, getCredential, saveCredential } from "./repo";
 
 /** 雨课堂功能 API,由 manifest 注册到 /api/features/yuketang/... */
@@ -67,6 +74,33 @@ export const api: Record<string, ApiHandler> = {
     try {
       const profile = await getUserInfo(cred);
       return Response.json({ ok: true, profile });
+    } catch (e) {
+      return Response.json({ error: (e as Error).message }, { status: 502 });
+    }
+  },
+
+  // 班级课程进度(章节树 + 每节状态 + 接下来要学)
+  "GET /classroom/:classroomId/progress": async (_req: Request, ctx) => {
+    const cred = getCredential();
+    if (!cred) return Response.json({ error: "未登录" }, { status: 401 });
+    const classroomId = Number(ctx.routeParams.classroomId);
+    if (!classroomId) return Response.json({ error: "班级参数错误" }, { status: 400 });
+    try {
+      const { chapters } = await getCourseProgress(cred, classroomId);
+      const courses = await getCourses(cred);
+      const course = courses.find((c) =>
+        c.classrooms.some((cl) => cl.id === classroomId),
+      );
+      const classroom = course?.classrooms.find((cl) => cl.id === classroomId);
+      const nextToLearn =
+        course && classroom ? findNextToLearn(course.name, classroom, chapters) : null;
+      return Response.json({
+        ok: true,
+        courseName: course?.name ?? "未知课程",
+        classroomName: classroom?.name ?? "",
+        chapters,
+        nextToLearn,
+      });
     } catch (e) {
       return Response.json({ error: (e as Error).message }, { status: 502 });
     }
